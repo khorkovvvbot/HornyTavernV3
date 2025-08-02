@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { supabase, testConnection } from '../lib/supabase'
+import { supabase, testConnection } from '../lib/database'
 import { GameSlider } from '../components/GameSlider'
 import { GameCard } from '../components/GameCard'
 import { Filter, X, AlertCircle, RefreshCw, WifiOff, Globe, Grid3X3, Star } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
-import type { Database } from '../lib/supabase'
+import type { Database } from '../lib/database'
 
 type Game = Database['public']['Tables']['games']['Row'] & {
   averageRating?: number

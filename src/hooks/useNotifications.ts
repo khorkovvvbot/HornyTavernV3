@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
-import type { Database } from '../lib/supabase'
+import { supabase } from '../lib/database'
+import type { Database } from '../lib/database'
 
 type User = Database['public']['Tables']['users']['Row']
 type NotificationRow = Database['public']['Tables']['notifications']['Row']
@@ -65,55 +65,8 @@ export const useNotifications = (user: User | null) => {
     // Initial fetch
     fetchNotifications()
 
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          console.log('Notification change:', payload)
-          
-          if (payload.eventType === 'INSERT') {
-            const newNotification = convertNotification(payload.new as NotificationRow)
-            setNotifications(prev => [newNotification, ...prev].slice(0, 50))
-            if (!newNotification.read) {
-              setUnreadCount(prev => prev + 1)
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            const updatedNotification = convertNotification(payload.new as NotificationRow)
-            setNotifications(prev => 
-              prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
-            )
-            // Recalculate unread count
-            setUnreadCount(prev => {
-              const oldNotification = notifications.find(n => n.id === updatedNotification.id)
-              if (oldNotification && !oldNotification.read && updatedNotification.read) {
-                return Math.max(0, prev - 1)
-              }
-              return prev
-            })
-          } else if (payload.eventType === 'DELETE') {
-            const deletedId = payload.old.id
-            setNotifications(prev => prev.filter(n => n.id !== deletedId))
-            // Recalculate unread count
-            const deletedNotification = notifications.find(n => n.id === deletedId)
-            if (deletedNotification && !deletedNotification.read) {
-              setUnreadCount(prev => Math.max(0, prev - 1))
-            }
-          }
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    // Note: Real-time subscriptions are not available with direct PostgreSQL
+    // You could implement polling or use WebSockets if needed
   }, [user])
 
   const addNotification = async (notification: Omit<Notification, 'id' | 'read' | 'createdAt'>) => {

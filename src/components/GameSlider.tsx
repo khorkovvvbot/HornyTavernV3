@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { GameCard } from './GameCard'
-import type { Database } from '../lib/supabase'
+import type { Database } from '../lib/database'
 
 type Game = Database['public']['Tables']['games']['Row'] & {
   averageRating?: number

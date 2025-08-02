@@ -1,621 +1,194 @@
-import { createClient } from '@supabase/supabase-js'
+import { query, testConnection } from './database'
+import type { Database } from './database'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables:', {
-    url: !!supabaseUrl,
-    key: !!supabaseAnonKey
-  })
-  throw new Error('Missing Supabase environment variables')
-}
-
-// Проверяем корректность URL
-try {
-  new URL(supabaseUrl)
-} catch (error) {
-  console.error('Invalid Supabase URL:', supabaseUrl)
-  throw new Error('Invalid Supabase URL format')
-}
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: false,
-    autoRefreshToken: false,
-    detectSessionInUrl: false
-  },
-  global: {
-    headers: {
-      'apikey': supabaseAnonKey
-    }
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10
-    }
-  }
-})
-
-// Функция для проверки подключения с детальной диагностикой
-export const testConnection = async () => {
-  try {
-    console.log('Testing Supabase connection...')
-    console.log('Supabase URL:', supabaseUrl)
-    console.log('Using anon key:', supabaseAnonKey ? 'Yes' : 'No')
-    
-    // Проверяем доступность URL
-    const response = await fetch(supabaseUrl + '/rest/v1/', {
-      method: 'HEAD',
-      headers: {
-        'apikey': supabaseAnonKey,
-        'Authorization': `Bearer ${supabaseAnonKey}`
-      }
-    })
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-    }
-    
-    console.log('Supabase connection successful')
-    return { success: true, error: null }
-  } catch (error) {
-    console.error('Supabase connection test failed:', error)
-    
-    let errorMessage = 'Неизвестная ошибка подключения'
-    let suggestions: string[] = []
-    
-    if (error instanceof TypeError && error.message.includes('fetch')) {
-      errorMessage = 'Не удается подключиться к серверу базы данных'
-      suggestions = [
-        'Проверьте подключение к интернету',
-        'Если используете VPN или прокси - попробуйте отключить их',
-        'Если не используете VPN - попробуйте включить',
-        'Попробуйте переключиться на мобильный интернет',
-        'Попробуйте переключиться на Wi-Fi (если используете мобильный)',
-        'Проверьте настройки файрвола или антивируса',
-        'Убедитесь, что URL Supabase правильный в файле .env'
-      ]
-    } else if (error instanceof Error) {
-      if (error.message.includes('404')) {
-        errorMessage = 'Проект Supabase не найден'
-        suggestions = [
-          'Проверьте правильность URL проекта в файле .env',
-          'Убедитесь, что проект не был удален',
-          'Проверьте настройки в Supabase Dashboard'
-        ]
-      } else if (error.message.includes('401') || error.message.includes('403')) {
-        errorMessage = 'Неверный API ключ Supabase'
-        suggestions = [
-          'Проверьте правильность anon key в файле .env',
-          'Убедитесь, что ключ скопирован полностью',
-          'Проверьте настройки API в Supabase Dashboard',
-          'Перезапустите сервер разработки после изменения .env'
-        ]
-      } else if (error.message.includes('timeout') || error.message.includes('TIMEOUT')) {
-        errorMessage = 'Превышено время ожидания подключения'
-        suggestions = [
-          'Проверьте скорость интернет-соединения',
-          'Попробуйте отключить VPN или прокси',
-          'Переключитесь на другую сеть (Wi-Fi ↔ мобильный интернет)',
-          'Проверьте настройки файрвола'
-        ]
-      } else {
-        errorMessage = error.message
-        suggestions = [
-          'Проверьте подключение к интернету',
-          'Попробуйте отключить/включить VPN или прокси',
-          'Переключитесь между Wi-Fi и мобильным интернетом'
-        ]
-      }
-    }
-    
-    return { 
-      success: false, 
-      error: errorMessage,
-      suggestions 
-    }
+// Create a Supabase-like interface for easier migration
+class PostgreSQLClient {
+  from(table: string) {
+    return new TableQuery(table)
   }
 }
 
-export type Database = {
-  public: {
-    Tables: {
-      games: {
-        Row: {
-          id: string
-          title: string
-          description_en: string
-          description_ru: string
-          cover_url: string
-          download_link: string
-          platform: 'Android' | 'Windows'
-          platforms: string[]
-          genres: string[]
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          title: string
-          description_en?: string
-          description_ru?: string
-          cover_url?: string
-          download_link?: string
-          platform: 'Android' | 'Windows'
-          platforms?: string[]
-          genres?: string[]
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          title?: string
-          description_en?: string
-          description_ru?: string
-          cover_url?: string
-          download_link?: string
-          platform?: 'Android' | 'Windows'
-          platforms?: string[]
-          genres?: string[]
-          updated_at?: string
-        }
-      }
-      screenshots: {
-        Row: {
-          id: string
-          game_id: string
-          image_url: string
-          order_index: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          game_id: string
-          image_url: string
-          order_index?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          game_id?: string
-          image_url?: string
-          order_index?: number
-        }
-      }
-      users: {
-        Row: {
-          id: string
-          telegram_id: number
-          username: string
-          first_name: string
-          last_name: string
-          avatar_url: string
-          language: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          telegram_id: number
-          username?: string
-          first_name?: string
-          last_name?: string
-          avatar_url?: string
-          language?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          telegram_id?: number
-          username?: string
-          first_name?: string
-          last_name?: string
-          avatar_url?: string
-          language?: string
-        }
-      }
-      reviews: {
-        Row: {
-          id: string
-          user_id: string
-          game_id: string
-          rating: number
-          comment: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          game_id: string
-          rating: number
-          comment?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          game_id?: string
-          rating?: number
-          comment?: string
-        }
-      }
-      review_replies: {
-        Row: {
-          id: string
-          review_id: string
-          user_id: string
-          comment: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          review_id: string
-          user_id: string
-          comment: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          review_id?: string
-          user_id?: string
-          comment?: string
-        }
-      }
-      review_reactions: {
-        Row: {
-          id: string
-          review_id: string
-          user_id: string
-          reaction_type: 'like' | 'dislike'
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          review_id: string
-          user_id: string
-          reaction_type: 'like' | 'dislike'
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          review_id?: string
-          user_id?: string
-          reaction_type?: 'like' | 'dislike'
-        }
-      }
-      favorites: {
-        Row: {
-          id: string
-          user_id: string
-          game_id: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          game_id: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          game_id?: string
-        }
-      }
-      genres: {
-        Row: {
-          id: string
-          name: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-        }
-      }
-      notifications: {
-        Row: {
-          id: string
-          user_id: string
-          type: string
-          title: string
-          message: string
-          game_title: string | null
-          from_user: string | null
-          read: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          type: string
-          title: string
-          message: string
-          game_title?: string | null
-          from_user?: string | null
-          read?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          type?: string
-          title?: string
-          message?: string
-          game_title?: string | null
-          from_user?: string | null
-          read?: boolean
-        }
-      }
+class TableQuery {
+  private table: string
+  private selectFields: string = '*'
+  private whereConditions: string[] = []
+  private orderByClause: string = ''
+  private limitClause: string = ''
+  private params: any[] = []
+  private paramIndex: number = 1
+
+  constructor(table: string) {
+    this.table = table
+  }
+
+  select(fields: string = '*') {
+    this.selectFields = fields
+    return this
+  }
+
+  eq(column: string, value: any) {
+    this.whereConditions.push(`${column} = $${this.paramIndex}`)
+    this.params.push(value)
+    this.paramIndex++
+    return this
+  }
+
+  neq(column: string, value: any) {
+    this.whereConditions.push(`${column} != $${this.paramIndex}`)
+    this.params.push(value)
+    this.paramIndex++
+    return this
+  }
+
+  order(column: string, options?: { ascending?: boolean }) {
+    const direction = options?.ascending === false ? 'DESC' : 'ASC'
+    this.orderByClause = `ORDER BY ${column} ${direction}`
+    return this
+  }
+
+  limit(count: number) {
+    this.limitClause = `LIMIT ${count}`
+    return this
+  }
+
+  async single() {
+    const result = await this.execute()
+    if (result.error) return result
+    
+    const data = result.data?.[0] || null
+    return { data, error: null }
+  }
+
+  async maybeSingle() {
+    const result = await this.execute()
+    if (result.error) return result
+    
+    const data = result.data?.[0] || null
+    return { data, error: null }
+  }
+
+  private buildQuery() {
+    let sql = `SELECT ${this.selectFields} FROM ${this.table}`
+    
+    if (this.whereConditions.length > 0) {
+      sql += ` WHERE ${this.whereConditions.join(' AND ')}`
     }
-    Tables: {
-      games: {
-        Row: {
-          id: string
-          title: string
-          description_en: string
-          description_ru: string
-          cover_url: string
-          download_link: string
-          platform: 'Android' | 'Windows'
-          platforms: string[]
-          genres: string[]
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          title: string
-          description_en?: string
-          description_ru?: string
-          cover_url?: string
-          download_link?: string
-          platform: 'Android' | 'Windows'
-          platforms?: string[]
-          genres?: string[]
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          title?: string
-          description_en?: string
-          description_ru?: string
-          cover_url?: string
-          download_link?: string
-          platform?: 'Android' | 'Windows'
-          platforms?: string[]
-          genres?: string[]
-          updated_at?: string
-        }
+    
+    if (this.orderByClause) {
+      sql += ` ${this.orderByClause}`
+    }
+    
+    if (this.limitClause) {
+      sql += ` ${this.limitClause}`
+    }
+    
+    return sql
+  }
+
+  private async execute() {
+    try {
+      const sql = this.buildQuery()
+      console.log('Executing query:', sql, 'with params:', this.params)
+      
+      const result = await query(sql, this.params)
+      return { data: result.rows, error: null }
+    } catch (error) {
+      console.error('Database query error:', error)
+      return { data: null, error }
+    }
+  }
+
+  // For INSERT operations
+  async insert(data: any | any[]) {
+    try {
+      const records = Array.isArray(data) ? data : [data]
+      const results = []
+
+      for (const record of records) {
+        const columns = Object.keys(record)
+        const values = Object.values(record)
+        const placeholders = values.map((_, index) => `$${index + 1}`).join(', ')
+        
+        const sql = `INSERT INTO ${this.table} (${columns.join(', ')}) VALUES (${placeholders}) RETURNING *`
+        const result = await query(sql, values)
+        results.push(...result.rows)
       }
-      screenshots: {
-        Row: {
-          id: string
-          game_id: string
-          image_url: string
-          order_index: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          game_id: string
-          image_url: string
-          order_index?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          game_id?: string
-          image_url?: string
-          order_index?: number
-        }
+
+      return { data: Array.isArray(data) ? results : results[0], error: null }
+    } catch (error) {
+      console.error('Insert error:', error)
+      return { data: null, error }
+    }
+  }
+
+  // For UPDATE operations
+  async update(data: any) {
+    try {
+      const columns = Object.keys(data)
+      const values = Object.values(data)
+      const setClause = columns.map((col, index) => `${col} = $${index + 1}`).join(', ')
+      
+      let sql = `UPDATE ${this.table} SET ${setClause}`
+      let allParams = [...values]
+      
+      if (this.whereConditions.length > 0) {
+        // Adjust parameter indices for WHERE conditions
+        const adjustedConditions = this.whereConditions.map(condition => {
+          return condition.replace(/\$(\d+)/g, (match, num) => {
+            return `$${parseInt(num) + values.length}`
+          })
+        })
+        sql += ` WHERE ${adjustedConditions.join(' AND ')}`
+        allParams = [...values, ...this.params]
       }
-      users: {
-        Row: {
-          id: string
-          telegram_id: number
-          username: string
-          first_name: string
-          last_name: string
-          avatar_url: string
-          language: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          telegram_id: number
-          username?: string
-          first_name?: string
-          last_name?: string
-          avatar_url?: string
-          language?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          telegram_id?: number
-          username?: string
-          first_name?: string
-          last_name?: string
-          avatar_url?: string
-          language?: string
-        }
+      
+      sql += ' RETURNING *'
+      
+      const result = await query(sql, allParams)
+      return { data: result.rows, error: null }
+    } catch (error) {
+      console.error('Update error:', error)
+      return { data: null, error }
+    }
+  }
+
+  // For DELETE operations
+  async delete() {
+    try {
+      let sql = `DELETE FROM ${this.table}`
+      
+      if (this.whereConditions.length > 0) {
+        sql += ` WHERE ${this.whereConditions.join(' AND ')}`
       }
-      reviews: {
-        Row: {
-          id: string
-          user_id: string
-          game_id: string
-          rating: number
-          comment: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          game_id: string
-          rating: number
-          comment?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          game_id?: string
-          rating?: number
-          comment?: string
-        }
+      
+      const result = await query(sql, this.params)
+      return { data: null, error: null }
+    } catch (error) {
+      console.error('Delete error:', error)
+      return { data: null, error }
+    }
+  }
+
+  // For COUNT operations
+  async count() {
+    try {
+      let sql = `SELECT COUNT(*) as count FROM ${this.table}`
+      
+      if (this.whereConditions.length > 0) {
+        sql += ` WHERE ${this.whereConditions.join(' AND ')}`
       }
-      review_replies: {
-        Row: {
-          id: string
-          review_id: string
-          user_id: string
-          comment: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          review_id: string
-          user_id: string
-          comment: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          review_id?: string
-          user_id?: string
-          comment?: string
-        }
-      }
-      review_reactions: {
-        Row: {
-          id: string
-          review_id: string
-          user_id: string
-          reaction_type: 'like' | 'dislike'
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          review_id: string
-          user_id: string
-          reaction_type: 'like' | 'dislike'
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          review_id?: string
-          user_id?: string
-          reaction_type?: 'like' | 'dislike'
-        }
-      }
-      favorites: {
-        Row: {
-          id: string
-          user_id: string
-          game_id: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          game_id: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          game_id?: string
-        }
-      }
-      genres: {
-        Row: {
-          id: string
-          name: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          name: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          name?: string
-        }
-      }
-      notifications: {
-        Row: {
-          id: string
-          user_id: string
-          type: string
-          title: string
-          message: string
-          game_title: string | null
-          from_user: string | null
-          read: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          type: string
-          title: string
-          message: string
-          game_title?: string | null
-          from_user?: string | null
-          read?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          type?: string
-          title?: string
-          message?: string
-          game_title?: string | null
-          from_user?: string | null
-          read?: boolean
-        }
-      }
-      game_suggestions: {
-        Row: {
-          id: string
-          user_id: string
-          game_title: string
-          description: string
-          status: 'pending' | 'approved' | 'rejected'
-          created_at: string
-          reviewed_at: string | null
-          reviewed_by: string | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          game_title: string
-          description?: string
-          status?: 'pending' | 'approved' | 'rejected'
-          created_at?: string
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          game_title?: string
-          description?: string
-          status?: 'pending' | 'approved' | 'rejected'
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-        }
-      }
+      
+      const result = await query(sql, this.params)
+      return { count: parseInt(result.rows[0].count), error: null }
+    } catch (error) {
+      console.error('Count error:', error)
+      return { count: null, error }
     }
   }
 }
+
+// Create the main client instance
+export const supabase = new PostgreSQLClient()
+
+// Export types
+export type { Database }

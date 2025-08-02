@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Heart, MessageSquare, Star, Lightbulb, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/database'
 import { GameCard } from '../components/GameCard'
-import type { Database } from '../lib/supabase'
+import type { Database } from '../lib/database'
 
 type User = Database['public']['Tables']['users']['Row']
 type Game = Database['public']['Tables']['games']['Row'] & {

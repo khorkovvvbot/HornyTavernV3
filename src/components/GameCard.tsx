@@ -2,7 +2,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Download, Heart, Star, Smartphone, Monitor } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import type { Database } from '../lib/supabase'
+import type { Database } from '../lib/database'
 
 type Game = Database['public']['Tables']['games']['Row'] & {
   averageRating?: number

@@ -11,7 +11,7 @@ import { useAuth } from './hooks/useAuth'
 import { useStats } from './hooks/useStats'
 import { initTelegramWebApp } from './lib/telegram'
 import './lib/i18n'
-import type { Database } from './lib/supabase'
+import type { Database } from './lib/database'
 
 type Game = Database['public']['Tables']['games']['Row']
 

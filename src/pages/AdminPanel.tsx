@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Edit, Trash2, Save, X, Upload, Link, Image, Tag, ArrowLeft, Lightbulb } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/database'
 import { GenreManager } from '../components/GenreManager'
-import type { Database } from '../lib/supabase'
+import type { Database } from '../lib/database'
 
 type Game = Database['public']['Tables']['games']['Row']
 type Genre = Database['public']['Tables']['genres']['Row']

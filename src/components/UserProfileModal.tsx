@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { X, MessageSquare, Star, User } from 'lucide-react'
-import { supabase } from '../lib/supabase'
-import type { Database } from '../lib/supabase'
+import { supabase } from '../lib/database'
+import type { Database } from '../lib/database'
 
 type User = Database['public']['Tables']['users']['Row']
 
