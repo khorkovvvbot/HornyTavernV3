@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { supabase, testConnection } from '../lib/database'
+import { supabase } from '../lib/supabase'
+import { testConnection } from '../lib/database'
 import { getTelegramUser, mockTelegramUser } from '../lib/telegram'
 import type { Database } from '../lib/database'
 

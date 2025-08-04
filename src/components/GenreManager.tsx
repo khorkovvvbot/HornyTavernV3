@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Edit, Trash2, Save, X, Tag } from 'lucide-react'
-import { supabase } from '../lib/database'
+import { supabase } from '../lib/supabase'
 import type { Database } from '../lib/database'
 
 type Genre = Database['public']['Tables']['genres']['Row']

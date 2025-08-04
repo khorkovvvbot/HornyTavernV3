@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Plus, Edit, Trash2, Save, X, Upload, Link, Image, Tag, ArrowLeft, Lightbulb } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { supabase } from '../lib/database'
+import { supabase } from '../lib/supabase'
 import { GenreManager } from '../components/GenreManager'
 import type { Database } from '../lib/database'
 

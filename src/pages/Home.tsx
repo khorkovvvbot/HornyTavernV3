@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { supabase, testConnection } from '../lib/database'
+import { supabase } from '../lib/supabase'
+import { testConnection } from '../lib/database'
 import { GameSlider } from '../components/GameSlider'
 import { GameCard } from '../components/GameCard'
 import { Filter, X, AlertCircle, RefreshCw, WifiOff, Globe, Grid3X3, Star } from 'lucide-react'

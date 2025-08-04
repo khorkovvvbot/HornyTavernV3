@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/database'
+import { supabase } from '../lib/supabase'
 
 interface UserStats {
   averageRating: number

@@ -6,7 +6,7 @@ import { ImageViewer } from '../components/ImageViewer'
 import { UserProfileModal } from '../components/UserProfileModal'
 import { useAuth } from '../hooks/useAuth'
 import { useNotifications } from '../hooks/useNotifications'
-import { supabase } from '../lib/database'
+import { supabase } from '../lib/supabase'
 import type { Database } from '../lib/database'
 
 type Game = Database['public']['Tables']['games']['Row']
