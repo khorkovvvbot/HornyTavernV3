@@ -18,18 +18,6 @@ export const useAuth = () => {
       try {
         console.log('Initializing auth...')
         
-        // Test connection before proceeding
-        const connectionResult = await testConnection()
-        if (!connectionResult.success) {
-          console.error('Connection test failed:', connectionResult.error)
-          setConnectionError(connectionResult.error || 'Connection failed')
-          setLoading(false)
-          return
-        }
-        
-        // Clear any previous connection errors
-        setConnectionError(null)
-        
         // Get Telegram user data
         const telegramUser = getTelegramUser() || mockTelegramUser()
         
