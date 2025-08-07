@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { testConnection } from '../lib/database'
-import { getTelegramUser, mockTelegramUser } from '../lib/telegram'
+import { getTelegramUser, mockTelegramUser, waitForTelegram, isInTelegram } from '../lib/telegram'
 import type { Database } from '../lib/database'
 
 type User = Database['public']['Tables']['users']['Row']
@@ -18,8 +17,24 @@ export const useAuth = () => {
       try {
         console.log('Initializing auth...')
         
-        // Get Telegram user data
-        const telegramUser = getTelegramUser() || mockTelegramUser()
+        // Wait for Telegram WebApp to be ready
+        const webApp = await waitForTelegram()
+        
+        let telegramUser: any = null
+        
+        if (webApp && isInTelegram()) {
+          console.log('Running in Telegram, getting user data...')
+          telegramUser = getTelegramUser()
+          
+          if (!telegramUser) {
+            console.log('No user data from Telegram WebApp')
+            setLoading(false)
+            return
+          }
+        } else {
+          console.log('Not running in Telegram, using mock data')
+          telegramUser = mockTelegramUser()
+        }
         
         if (!telegramUser) {
           console.log('No Telegram user found')

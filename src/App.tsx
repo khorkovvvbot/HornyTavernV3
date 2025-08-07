@@ -26,7 +26,13 @@ function AppContent() {
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    initTelegramWebApp()
+    // Initialize Telegram WebApp after component mounts
+    const initTelegram = async () => {
+      console.log('App mounted, initializing Telegram WebApp...')
+      initTelegramWebApp()
+    }
+    
+    initTelegram()
   }, [])
 
   useEffect(() => {
